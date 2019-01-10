@@ -1,0 +1,96 @@
+--Mayra Dantas Bueno
+
+--Contagem da quantidade de músicas associadas ao seu tipo de mídia
+
+SELECT
+  t1.MediaName,
+  COUNT(*)
+FROM (SELECT
+  T.Name,
+  T.Milliseconds,
+  MT.Name MediaName
+FROM Track T
+JOIN MediaType MT
+  ON T.MediaTypeID = MT.MediaTypeID
+WHERE T.Milliseconds > (SELECT
+  AVG(Milliseconds)
+FROM Track)
+ORDER BY 2 DESC) t1
+GROUP BY 1
+;
+
+-- Consulta para retornar país que mais consumiram rock e países que menos consumiram rock.
+
+WITH t1
+AS (SELECT
+  c.Country AS Pais,
+  g.Name,
+  COUNT(g.Name) AS Quantidade
+FROM Customer AS c
+JOIN Invoice AS I
+  ON c.CustomerId = i.CustomerId
+JOIN InvoiceLine AS il
+  ON il.InvoiceId = i.InvoiceId
+JOIN Track AS t
+  ON t.TrackId = il.TrackId
+JOIN Genre AS g
+  ON g.GenreId = t.genreId
+WHERE g.Name = 'Rock'
+GROUP BY Pais
+ORDER BY Quantidade)
+SELECT
+  *
+FROM t1
+WHERE Quantidade = (SELECT
+  MAX(Quantidade)
+FROM t1)
+OR Quantidade = (SELECT
+  MIN(Quantidade)
+FROM t1)
+;
+
+--Consulta para retornar os 5 clientes que mais consomem música latina, sem repetição de email, e seus álbuns escolhidos. 
+
+SELECT
+  a.Title as Album,
+  c.Email as Customer_Email,
+  COUNT(g.Name) AS Latin_music
+FROM Genre AS g
+JOIN Track AS t
+  ON t.GenreId = g.GenreId
+JOIN InvoiceLine AS il
+  ON t.TrackId = il.TrackId
+JOIN Invoice AS i
+  ON i.InvoiceId = il.InvoiceId
+JOIN Customer AS c
+  ON i.CustomerId = c.CustomerId
+JOIN Album AS a
+  ON a.AlbumId = t.AlbumId
+WHERE g.Name = 'Latin'
+GROUP BY c.Email
+HAVING COUNT(*) > 1
+ORDER BY Latin_music DESC
+LIMIT 5
+;
+
+--Consulta que retorna artista com maior quantidade de músicas cadastradas e um dos artistas com menor quantidade de músicas cadastradas (para o gráfico, o limite ficou 3, então retornou 2 dos artistas com menos músicas).
+
+WITH t1 AS (SELECT
+  ar.Name AS Artista,
+  al.Title AS Album,
+  COUNT(ar.Name) AS Quantidade
+FROM Artist AS ar
+JOIN Album AS al
+  ON ar.ArtistId = al.ArtistId
+  GROUP BY Artista
+ORDER BY Quantidade DESC)
+SELECT *
+FROM t1
+WHERE Quantidade = (SELECT
+  MAX(Quantidade)
+FROM t1)
+OR Quantidade = (SELECT
+  MIN(Quantidade)
+FROM t1) 
+LIMIT 2
+;
